@@ -85,10 +85,13 @@ useEffect(() => { carregarDados(); }, []);
 const adicionarCliente = async () => {
   if (!formCliente.nome.trim()) { alert('Nome obrigatório!'); return; }
   try {
-    if (formCliente.id) {
-      await supabase.from('clientes').update(formCliente).eq('id', formCliente.id);
+    const { id, ...dadosCliente } = formCliente;
+    if (id) {
+      const { error } = await supabase.from('clientes').update(dadosCliente).eq('id', id);
+      if (error) throw error;
     } else {
-      await supabase.from('clientes').insert([formCliente]);
+      const { error } = await supabase.from('clientes').insert([dadosCliente]);
+      if (error) throw error;
     }
     await carregarDados();
     setModalAberto('');
@@ -108,12 +111,13 @@ const excluirCliente = async (id) => {
 const adicionarProduto = async () => {
   if (!formProduto.nome.trim() || !formProduto.preco) { alert('Nome e preço obrigatórios!'); return; }
   try {
-    const dados = { ...formProduto, preco: parseFloat(formProduto.preco), estoque: parseInt(formProduto.estoque) || 0 };
+    const { id, ...dadosProduto } = { ...formProduto, preco: parseFloat(formProduto.preco), estoque: parseInt(formProduto.estoque) || 0 };
     if (formProduto.id) {
-      await supabase.from('produtos').update(dados).eq('id', formProduto.id);
+      const { error } = await supabase.from('produtos').update(dadosProduto).eq('id', formProduto.id);
+      if (error) throw error;
     } else {
-      delete dados.id;
-      await supabase.from('produtos').insert([dados]);
+      const { error } = await supabase.from('produtos').insert([dadosProduto]);
+      if (error) throw error;
     }
     await carregarDados();
     setModalAberto('');
@@ -133,12 +137,13 @@ const excluirProduto = async (id) => {
 const adicionarKit = async () => {
   if (!formKit.nome.trim() || !formKit.qtd || !formKit.preco) { alert('Todos campos obrigatórios!'); return; }
   try {
-    const dados = { ...formKit, qtd: parseInt(formKit.qtd), preco: parseFloat(formKit.preco) };
+    const { id, ...dadosKit } = { ...formKit, qtd: parseInt(formKit.qtd), preco: parseFloat(formKit.preco) };
     if (formKit.id) {
-      await supabase.from('kits').update(dados).eq('id', formKit.id);
+      const { error } = await supabase.from('kits').update(dadosKit).eq('id', formKit.id);
+      if (error) throw error;
     } else {
-      delete dados.id;
-      await supabase.from('kits').insert([dados]);
+      const { error } = await supabase.from('kits').insert([dadosKit]);
+      if (error) throw error;
     }
     await carregarDados();
     setModalAberto('');
@@ -182,7 +187,8 @@ const finalizarVenda = async () => {
   try {
     const total = carrinho.reduce((sum, item) => sum + (item.preco * item.qtd), 0);
     const venda = { cid: clienteSelecionado.id, tipo: carrinho.length === 1 ? carrinho[0].tipo : 'Misto', itens: carrinho, total, data: new Date().toISOString() };
-    const { data: vendaData } = await supabase.from('vendas').insert([venda]).select();
+    const { data: vendaData, error } = await supabase.from('vendas').insert([venda]).select();
+    if (error) throw error;
     
     for (const item of carrinho) {
       if (item.tipo === 'Produto') {
@@ -202,7 +208,8 @@ const finalizarVenda = async () => {
       total: total, 
       data: new Date().toLocaleString('pt-BR') 
     };
-    await supabase.from('etiquetas').insert([novaEtiqueta]);
+    const { error: etqError } = await supabase.from('etiquetas').insert([novaEtiqueta]);
+    if (etqError) throw etqError;
     
     await carregarDados();
     alert('Venda finalizada!');
