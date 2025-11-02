@@ -210,15 +210,19 @@
                     const venda = {cid: parseInt(clienteVenda), tipo: vendaSelecionada, itens: vendaItens, total, data: new Date().toISOString()};
                     const {data:vd} = await supabase.from('vendas').insert([venda]).select();
                     for (const item of vendaItens.filter(i=>i.tipo==='avulsa')) {
-                        const p = produtos.find(x=>x.id===item.id);
-                        if(p) await supabase.from('produtos').update({estoque:Math.max(0,(p.estoque||0)-item.qtd)}).eq('id',p.id);
+                        // Buscar estoque atual do banco
+                        const {data: prodAtual} = await supabase.from('produtos').select('estoque').eq('id',item.id).single();
+                        if(prodAtual) {
+                            const novoEstoque = Math.max(0, (prodAtual.estoque||0) - item.qtd);
+                            await supabase.from('produtos').update({estoque:novoEstoque}).eq('id',item.id);
+                        }
                     }
                     const cliente = clientes.find(c => c.id === parseInt(clienteVenda));
                     await supabase.from('etiquetas').insert([{cliente:cliente?.nome||'N/A',endereco:cliente?.endereco||'',itens:vendaItens,total,data:new Date().toLocaleString('pt-BR'),venda_id:vd[0].id}]);
                     await carregarDados();
                     setClienteVenda('');setVendaItens([]);setProdutoSel('');setKitSel('');setQtdAvulsa(1);setQtdKit(1);
                     alert('Venda realizada! Etiqueta adicionada à fila.');
-                } catch(e) { alert('Erro!'); }
+                } catch(e) { console.error(e); alert('Erro!'); }
             };
 
             const excluirVenda = async (id) => {
@@ -227,14 +231,18 @@
                         const vendaExcluida = vendas.find(v => v.id === id);
                         if (vendaExcluida) {
                             for (const item of vendaExcluida.itens.filter(i=>i.tipo==='avulsa')) {
-                                const p = produtos.find(x=>x.id===item.id);
-                                if(p) await supabase.from('produtos').update({estoque:(p.estoque||0)+item.qtd}).eq('id',p.id);
+                                // Buscar estoque atual do banco
+                                const {data: prodAtual} = await supabase.from('produtos').select('estoque').eq('id',item.id).single();
+                                if(prodAtual) {
+                                    const novoEstoque = (prodAtual.estoque||0) + item.qtd;
+                                    await supabase.from('produtos').update({estoque:novoEstoque}).eq('id',item.id);
+                                }
                             }
                         }
                         await supabase.from('vendas').delete().eq('id', id);
                         await supabase.from('etiquetas').delete().eq('venda_id', id);
                         await carregarDados();
-                    } catch(e) { alert('Erro!'); }
+                    } catch(e) { console.error(e); alert('Erro!'); }
                 }
             };
 
