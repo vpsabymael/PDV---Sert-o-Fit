@@ -68,30 +68,25 @@
                 carregarDados();
             }, []);
 
-            const carregarDados = () => {
+            const carregarDados = async () => {
                 try {
-                    const c = JSON.parse(localStorage.getItem('clientes') || '[]');
-                    const p = JSON.parse(localStorage.getItem('produtos') || '[]');
-                    const k = JSON.parse(localStorage.getItem('kits') || '[]');
-                    const v = JSON.parse(localStorage.getItem('vendas') || '[]');
-                    const e = JSON.parse(localStorage.getItem('etiquetas') || '[]');
-                    setClientes(c);
-                    setProdutos(p);
-                    setKits(k);
-                    setVendas(v);
-                    setEtiquetas(e);
+                    setLoading(true);
+                    const [c, p, k, v, e] = await Promise.all([
+                        supabase.from('clientes').select('*'),
+                        supabase.from('produtos').select('*'),
+                        supabase.from('kits').select('*'),
+                        supabase.from('vendas').select('*'),
+                        supabase.from('etiquetas').select('*')
+                    ]);
+                    setClientes(c.data || []);
+                    setProdutos(p.data || []);
+                    setKits(k.data || []);
+                    setVendas(v.data || []);
+                    setEtiquetas(e.data || []);
                 } catch (error) {
-                    console.error('Erro ao carregar:', error);
-                }
-                setLoading(false);
-            };
-
-            const salvarDados = (tipo, dados) => {
-                try {
-                    localStorage.setItem(tipo, JSON.stringify(dados));
-                } catch (error) {
-                    console.error('Erro ao salvar:', error);
-                    alert('Erro ao salvar dados!');
+                    console.error('Erro:', error);
+                } finally {
+                    setLoading(false);
                 }
             };
 
