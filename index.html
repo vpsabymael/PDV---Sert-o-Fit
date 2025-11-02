@@ -221,8 +221,7 @@
                     await supabase.from('etiquetas').insert([{cliente:cliente?.nome||'N/A',endereco:cliente?.endereco||'',itens:vendaItens,total,data:new Date().toLocaleString('pt-BR'),venda_id:vd[0].id}]);
                     await carregarDados();
                     setClienteVenda('');setVendaItens([]);setProdutoSel('');setKitSel('');setQtdAvulsa(1);setQtdKit(1);
-                    alert('Venda realizada! Etiqueta adicionada à fila.');
-                } catch(e) { console.error(e); alert('Erro!'); }
+                } catch(e) { console.error(e); alert('Erro ao finalizar venda!'); }
             };
 
             const excluirVenda = async (id) => {
