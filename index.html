@@ -246,15 +246,15 @@
                             }
                         }
                         
-                        // Excluir venda e etiqueta
-                        await supabase.from('vendas').delete().eq('id', id);
+                        // IMPORTANTE: Excluir etiqueta ANTES da venda (por causa da FK)
                         await supabase.from('etiquetas').delete().eq('venda_id', id);
+                        await supabase.from('vendas').delete().eq('id', id);
                         console.log('Venda excluída com sucesso');
                         
                         await carregarDados();
                     } catch(e) { 
                         console.error('Erro ao excluir:', e); 
-                        alert('Erro ao excluir venda!'); 
+                        alert('Erro ao excluir venda: ' + e.message); 
                     }
                 }
             };
