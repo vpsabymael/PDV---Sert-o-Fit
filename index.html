@@ -171,11 +171,26 @@
                 }
             };
 
-            const adicionarItemVenda = () => {
+            const adicionarItemVenda = async () => {
                 if (vendaSelecionada === 'avulsa') {
                     if (!produtoSel) return alert('Selecione um produto!');
                     const produto = produtos.find(p => p.id === parseInt(produtoSel));
                     if (!produto) return;
+                    
+                    // Verificar estoque disponível
+                    const {data: prodAtual} = await supabase.from('produtos').select('estoque,nome').eq('id',produto.id).single();
+                    if (prodAtual) {
+                        const estoqueDisponivel = prodAtual.estoque || 0;
+                        const itemExistente = vendaItens.find(i => i.id === produto.id && i.tipo === 'avulsa');
+                        const qtdJaNoCarrinho = itemExistente ? itemExistente.qtd : 0;
+                        const qtdTotal = qtdJaNoCarrinho + qtdAvulsa;
+                        
+                        if (qtdTotal > estoqueDisponivel) {
+                            alert(`Estoque insuficiente!\n\n${prodAtual.nome}\nDisponível: ${estoqueDisponivel}\nJá no carrinho: ${qtdJaNoCarrinho}\nTentando adicionar: ${qtdAvulsa}`);
+                            return;
+                        }
+                    }
+                    
                     const itemExistente = vendaItens.find(i => i.id === produto.id && i.tipo === 'avulsa');
                     if (itemExistente) {
                         setVendaItens(vendaItens.map(i => i.id === produto.id && i.tipo === 'avulsa' ? { ...i, qtd: i.qtd + qtdAvulsa } : i));
