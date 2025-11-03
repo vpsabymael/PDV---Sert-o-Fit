@@ -60,6 +60,7 @@
             const [kitSel, setKitSel] = useState('');
             const [qtdAvulsa, setQtdAvulsa] = useState(1);
             const [qtdKit, setQtdKit] = useState(1);
+            const [processandoVenda, setProcessandoVenda] = useState(false);
 
             useEffect(() => {
                 const hoje = new Date();
@@ -205,6 +206,9 @@
             const finalizarVenda = async () => {
                 if (!clienteVenda) return alert('Selecione um cliente!');
                 if (vendaItens.length === 0) return alert('Adicione produtos!');
+                if (processandoVenda) return; // Evita clique duplo
+                
+                setProcessandoVenda(true);
                 try {
                     const total = vendaItens.reduce((sum, i) => sum + (i.preco * i.qtd), 0);
                     const venda = {cid: parseInt(clienteVenda), tipo: vendaSelecionada, itens: vendaItens, total, data: new Date().toISOString()};
@@ -221,7 +225,12 @@
                     await supabase.from('etiquetas').insert([{cliente:cliente?.nome||'N/A',endereco:cliente?.endereco||'',itens:vendaItens,total,data:new Date().toLocaleString('pt-BR'),venda_id:vd[0].id}]);
                     await carregarDados();
                     setClienteVenda('');setVendaItens([]);setProdutoSel('');setKitSel('');setQtdAvulsa(1);setQtdKit(1);
-                } catch(e) { console.error(e); alert('Erro ao finalizar venda!'); }
+                } catch(e) { 
+                    console.error(e); 
+                    alert('Erro ao finalizar venda!'); 
+                } finally {
+                    setProcessandoVenda(false);
+                }
             };
 
             const excluirVenda = async (id) => {
@@ -555,7 +564,12 @@
                                                 </div>
                                                 <div className="border-t-2 pt-4">
                                                     <p className="text-2xl font-bold text-right mb-4">Total: R$ {vendaItens.reduce((sum, i) => sum + (i.preco * i.qtd), 0).toFixed(2)}</p>
-                                                    <button onClick={finalizarVenda} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg">✅ Finalizar</button>
+                                                    <button 
+                                                        onClick={finalizarVenda} 
+                                                        disabled={processandoVenda}
+                                                        className={"w-full py-3 rounded-lg font-bold text-lg " + (processandoVenda ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700")}>
+                                                        {processandoVenda ? "⏳ Processando..." : "✅ Finalizar"}
+                                                    </button>
                                                 </div>
                                             </>
                                         )}
